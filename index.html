@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S1gNqte - 記号とタグで思考を整理するSNS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            color: #212529;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #212529;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: none;
+        }
+
+        .header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .post-composer {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .symbol-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .symbol-btn {
+            background: white;
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: #212529;
+        }
+
+        .symbol-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
+            background: #0066FF;
+            color: white;
+            border-color: #0066FF;
+        }
+
+        .symbol-btn:active {
+            transform: translateY(0);
+        }
+
+        .post-input {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .post-input:focus {
+            outline: none;
+            border-color: #0066FF;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+            background: white;
+        }
+
+        .tag-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .tag-input:focus {
+            outline: none;
+            border-color: #0066FF;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .post-btn {
+            background: #0066FF;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+        }
+
+        .post-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 102, 255, 0.4);
+            background: #0052CC;
+        }
+
+        .posts {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #0066FF;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .post:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .post-user {
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .post-time {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .post-content {
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #0066FF;
+            color: #212529;
+        }
+
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: #212529;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tag:hover {
+            transform: scale(1.05);
+            background: #0066FF;
+            box-shadow: 0 2px 8px rgba(0, 102, 255, 0.3);
+        }
+
+        .search-filter {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0066FF;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-tag {
+            background: #f0f0f0;
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .filter-tag:hover {
+            background: #e0e0e0;
+        }
+
+        .filter-tag.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #4a5ed1;
+        }
+
+        .symbol-guide {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .guide-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .guide-symbol {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .guide-name {
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .guide-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .symbol-toolbar {
+                gap: 5px;
+            }
+            
+            .symbol-btn {
+                font-size: 1rem;
+                padding: 6px 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 SigNote</h1>
+            <p>記号とタグで思考を整理・共有するSNS</p>
+        </div>
+
+        <div class="symbol-guide">
+            <h3>📋 記号ガイド</h3>
+            <div class="guide-grid">
+                <div class="guide-item">
+                    <div class="guide-symbol">●</div>
+                    <div class="guide-name">#core</div>
+                    <div class="guide-desc">重要・中心・主張の核</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">→</div>
+                    <div class="guide-name">#flow</div>
+                    <div class="guide-desc">物事の順番・因果関係</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">▢</div>
+                    <div class="guide-name">#block</div>
+                    <div class="guide-desc">概念・話題・テーマの枠組み</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">★</div>
+                    <div class="guide-name">#highlight</div>
+                    <div class="guide-desc">印象・注目ポイント</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">↺</div>
+                    <div class="guide-name">#loop</div>
+                    <div class="guide-desc">見直し・改善・反復</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">≡</div>
+                    <div class="guide-name">#tag</div>
+                    <div class="guide-desc">複数要素の共通属性</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">⧉</div>
+                    <div class="guide-name">#ref</div>
+                    <div class="guide-desc">他のノート・本との接続</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-symbol">⇄</div>
+                    <div class="guide-name">#compare</div>
+                    <div class="guide-desc">対立・比較・選択</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-filter">
+            <h3>🔍 検索・フィルター (未実装)</h3>
+            <input type="text" class="search-input" placeholder="キーワードやタグで検索..." id="searchInput">
+            <div class="filter-tags" id="filterTags">
+                <div class="filter-tag" data-tag="core">core</div>
+                <div class="filter-tag" data-tag="flow">flow</div>
+                <div class="filter-tag" data-tag="block">block</div>
+                <div class="filter-tag" data-tag="highlight">highlight</div>
+                <div class="filter-tag" data-tag="loop">loop</div>
+                <div class="filter-tag" data-tag="learning">learning</div>
+                <div class="filter-tag" data-tag="habits">habits</div>
+                <div class="filter-tag" data-tag="productivity">productivity</div>
+            </div>
+        </div>
+
+        <div class="post-composer">
+            <h3>✍️ 新しいノートを作成</h3>
+            <div class="symbol-toolbar">
+                <button class="symbol-btn" data-symbol="●">● core</button>
+                <button class="symbol-btn" data-symbol="→">→ flow</button>
+                <button class="symbol-btn" data-symbol="▢">▢ block</button>
+                <button class="symbol-btn" data-symbol="★">★ highlight</button>
+                <button class="symbol-btn" data-symbol="↺">↺ loop</button>
+                <button class="symbol-btn" data-symbol="≡">≡ tag</button>
+                <button class="symbol-btn" data-symbol="⧉">⧉ ref</button>
+                <button class="symbol-btn" data-symbol="⇄">⇄ compare</button>
+            </div>
+            <textarea class="post-input" id="postInput" placeholder="記号やタグを使って思考を整理してみましょう...
+
+🔄 自動変換機能：
+#core → ●　#flow → →　#block → ▢　#highlight → ★
+#loop → ↺　#tag → ≡　#ref → ⧉　#compare → ⇄
+
+例:
+#block 習慣化の壁
+　#core やる気が続かない
+　#flow モチベーション曲線を知る
+　#loop 失敗した記録を見直す
+　#highlight 達成率を数値化してみる
+　#ref 「習慣の力」第4章"></textarea>
+            <input type="text" class="tag-input" id="tagInput" placeholder="タグを入力 (例: #習慣 #学習 #生産性)">
+            <button class="post-btn" onclick="createPost()">投稿する</button>
+        </div>
+
+        <div class="posts" id="posts">
+            <!-- サンプル投稿 -->
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">思考整理マスター</div>
+                    <div class="post-time">5分前</div>
+                </div>
+                <div class="post-content">▢学習効率化
+　●集中力が続かない問題
+　→ポモドーロテクニック導入
+　★25分集中→5分休憩が効果的
+　↺週末に振り返りをする
+　⧉「集中力」本田直之 第2章
+　
+A ⇄ B の比較
+　長時間学習 ⇄ 短時間集中
+　★短時間集中の方が記憶定着率UP</div>
+                <div class="post-tags">
+                    <div class="tag">#learning</div>
+                    <div class="tag">#productivity</div>
+                    <div class="tag">#core</div>
+                    <div class="tag">#flow</div>
+                </div>
+            </div>
+
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">ライフハッカー</div>
+                    <div class="post-time">1時間前</div>
+                </div>
+                <div class="post-content">▢朝のルーティン改善
+　●起床時間がバラバラ
+　→アラーム時間を固定
+　→前日の準備を充実させる
+　★起床後の水分補給が重要
+　↺月末に効果測定
+　
+≡共通点：継続が鍵
+≡タグ：#morning #routine #health</div>
+                <div class="post-tags">
+                    <div class="tag">#habits</div>
+                    <div class="tag">#morning</div>
+                    <div class="tag">#health</div>
+                    <div class="tag">#block</div>
+                </div>
+            </div>
+
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">読書好き</div>
+                    <div class="post-time">3時間前</div>
+                </div>
+                <div class="post-content">▢読書メモ術
+　●読んだ内容を忘れてしまう
+　→読書ノートに記号で整理
+　★重要箇所は●マークで強調
+　⧉他の本との関連性を→で繋ぐ
+　↺月1回でノートを見直し
+　
+デジタル ⇄ アナログ
+　★アナログの方が記憶に残りやすい</div>
+                <div class="post-tags">
+                    <div class="tag">#reading</div>
+                    <div class="tag">#notes</div>
+                    <div class="tag">#memory</div>
+                    <div class="tag">#ref</div>
+                    <div class="tag">#compare</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let posts = [];
+        let activeFilters = new Set();
+
+        // タグから記号への変換マップ
+        const tagToSymbolMap = {
+            '#core': '●',
+            '#flow': '→',
+            '#block': '▢',
+            '#highlight': '★',
+            '#loop': '↺',
+            '#tag': '≡',
+            '#ref': '⧉',
+            '#compare': '⇄'
+        };
+
+        // 自動変換機能
+        function autoConvertTags(input) {
+            let text = input.value;
+            let cursorPos = input.selectionStart;
+            let converted = false;
+            let offsetAdjustment = 0;
+
+            // 各タグを記号に変換
+            Object.entries(tagToSymbolMap).forEach(([tag, symbol]) => {
+                const regex = new RegExp(tag.replace('#', '\\#'), 'gi');
+                const matches = Array.from(text.matchAll(regex));
+                
+                matches.forEach(match => {
+                    const matchStart = match.index;
+                    const matchEnd = matchStart + match[0].length;
+                    
+                    // カーソル位置より前の変換の場合、オフセットを調整
+                    if (matchEnd <= cursorPos) {
+                        offsetAdjustment += symbol.length - tag.length;
+                    }
+                    
+                    converted = true;
+                });
+                
+                text = text.replace(regex, symbol);
+            });
+
+            if (converted) {
+                input.value = text;
+                // カーソル位置を調整
+                input.setSelectionRange(cursorPos + offsetAdjustment, cursorPos + offsetAdjustment);
+                
+                // 変換エフェクト
+                input.style.backgroundColor = '#e8f4fd';
+                setTimeout(() => {
+                    input.style.backgroundColor = '';
+                }, 300);
+            }
+        }
+
+        // 入力フィールドでの自動変換
+        document.getElementById('postInput').addEventListener('input', (e) => {
+            autoConvertTags(e.target);
+        });
+
+        // スペースキーやエンターキーでの即座変換
+        document.getElementById('postInput').addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                setTimeout(() => autoConvertTags(e.target), 0);
+            }
+        });
+
+        // 記号ボタンのクリックイベント
+        document.querySelectorAll('.symbol-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const symbol = btn.dataset.symbol;
+                const input = document.getElementById('postInput');
+                const cursorPos = input.selectionStart;
+                const text = input.value;
+                
+                // カーソル位置に記号を挿入
+                const newText = text.slice(0, cursorPos) + symbol + ' ' + text.slice(cursorPos);
+                input.value = newText;
+                
+                // カーソル位置を調整
+                input.focus();
+                input.setSelectionRange(cursorPos + symbol.length + 1, cursorPos + symbol.length + 1);
+                
+                // ボタンにアニメーション効果
+                btn.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    btn.style.transform = 'scale(1)';
+                }, 100);
+            });
+        });
+
+        // フィルタータグのクリックイベント
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                const tagName = tag.dataset.tag;
+                
+                if (activeFilters.has(tagName)) {
+                    activeFilters.delete(tagName);
+                    tag.classList.remove('active');
+                } else {
+                    activeFilters.add(tagName);
+                    tag.classList.add('active');
+                }
+                
+                filterPosts();
+            });
+        });
+
+        // 検索機能
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filterPosts();
+        });
+
+        // 投稿作成機能
+        function createPost() {
+            const content = document.getElementById('postInput').value.trim();
+            const tags = document.getElementById('tagInput').value.trim();
+            
+            if (!content) {
+                alert('内容を入力してください');
+                return;
+            }
+            
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const post = {
+                id: Date.now(),
+                user: 'あなた',
+                time: timeStr,
+                content: content,
+                tags: tags.split(/\s+/).filter(tag => tag.startsWith('#')),
+                timestamp: now
+            };
+            
+            posts.unshift(post);
+            renderPosts();
+            
+            // 入力欄をクリア
+            document.getElementById('postInput').value = '';
+            document.getElementById('tagInput').value = '';
+            
+            // 成功メッセージ
+            showMessage('投稿が作成されました！');
+        }
+
+        // 投稿をレンダリング
+        function renderPosts() {
+            const postsContainer = document.getElementById('posts');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filteredPosts = posts;
+            
+            // 検索フィルター
+            if (searchTerm) {
+                filteredPosts = filteredPosts.filter(post => 
+                    post.content.toLowerCase().includes(searchTerm) ||
+                    post.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // タグフィルター
+            if (activeFilters.size > 0) {
+                filteredPosts = filteredPosts.filter(post => 
+                    [...activeFilters].some(filter => 
+                        post.tags.some(tag => tag.toLowerCase().includes(filter)) ||
+                        post.content.toLowerCase().includes(filter)
+                    )
+                );
+            }
+            
+            // 既存のサンプル投稿を保持
+            const samplePosts = postsContainer.querySelectorAll('.post');
+            let samplePostsHTML = '';
+            samplePosts.forEach(post => {
+                samplePostsHTML += post.outerHTML;
+            });
+            
+            // 新しい投稿をレンダリング
+            const newPostsHTML = filteredPosts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        <div class="post-user">${post.user}</div>
+                        <div class="post-time">${post.time}</div>
+                    </div>
+                    <div class="post-content">${post.content}</div>
+                    <div class="post-tags">
+                        ${post.tags.map(tag => `<div class="tag">${tag}</div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            postsContainer.innerHTML = newPostsHTML + samplePostsHTML;
+        }
+
+        // フィルタリング機能
+        function filterPosts() {
+            renderPosts();
+        }
+
+        // メッセージ表示
+        function showMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(messageDiv);
+                }, 300);
+            }, 3000);
+        }
+        
+        // CSS アニメーション
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初期化
+        renderPosts();
+    </script>
+</body>
+</html>
