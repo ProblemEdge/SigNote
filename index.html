@@ -56,6 +56,113 @@
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
+        .ocr-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .ocr-section h4 {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .upload-area {
+            border: 2px dashed #0066FF;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .upload-area:hover {
+            background: #f0f8ff;
+            border-color: #0052CC;
+        }
+
+        .upload-area.dragover {
+            background: #e6f3ff;
+            border-color: #0052CC;
+            transform: scale(1.02);
+        }
+
+        .upload-content .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-content p {
+            margin: 0 0 5px 0;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .upload-content small {
+            color: #6c757d;
+        }
+
+        .ocr-result {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 4px solid #28a745;
+        }
+
+        .ocr-result h5 {
+            margin: 0 0 10px 0;
+            color: #28a745;
+        }
+
+        .ocr-text {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+            min-height: 60px;
+        }
+
+        .apply-ocr-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-ocr-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .processing {
+            text-align: center;
+            color: #0066FF;
+            font-style: italic;
+        }
+
+        .processing::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
         .symbol-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -311,6 +418,24 @@
             color: #666;
         }
 
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transform: translateX(300px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .message.show {
+            transform: translateX(0);
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -385,7 +510,7 @@
         </div>
 
         <div class="search-filter">
-            <h3>🔍 検索・フィルター (未実装)</h3>
+            <h3>🔍 検索・フィルター</h3>
             <input type="text" class="search-input" placeholder="キーワードやタグで検索..." id="searchInput">
             <div class="filter-tags" id="filterTags">
                 <div class="filter-tag" data-tag="core">core</div>
@@ -401,6 +526,25 @@
 
         <div class="post-composer">
             <h3>✍️ 新しいノートを作成</h3>
+            
+            <!-- 画像アップロード・OCR機能 -->
+            <div class="ocr-section">
+                <h4>📷 手書きメモをアップロード (デモ)</h4>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                    <div class="upload-content">
+                        <div class="upload-icon">📸</div>
+                        <p>画像をドラッグ&ドロップ、またはクリックして選択</p>
+                        <small>手書きメモや記号を自動でテキスト化します</small>
+                    </div>
+                </div>
+                <div class="ocr-result" id="ocrResult" style="display: none;">
+                    <h5>認識結果:</h5>
+                    <div class="ocr-text" id="ocrText"></div>
+                    <button class="apply-ocr-btn" onclick="applyOcrText()">テキストエリアに反映</button>
+                </div>
+            </div>
+            
             <div class="symbol-toolbar">
                 <button class="symbol-btn" data-symbol="●">● core</button>
                 <button class="symbol-btn" data-symbol="→">→ flow</button>
@@ -503,6 +647,7 @@ A ⇄ B の比較
     <script>
         let posts = [];
         let activeFilters = new Set();
+        let currentOcrText = '';
 
         // タグから記号への変換マップ
         const tagToSymbolMap = {
@@ -515,6 +660,108 @@ A ⇄ B の比較
             '#ref': '⧉',
             '#compare': '⇄'
         };
+
+        // OCR機能の初期化
+        function initOCR() {
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+
+            // クリックでファイル選択
+            uploadArea.addEventListener('click', () => {
+                imageInput.click();
+            });
+
+            // ドラッグ&ドロップ
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleImageFile(files[0]);
+                }
+            });
+
+            // ファイル選択
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleImageFile(e.target.files[0]);
+                }
+            });
+        }
+
+        // 画像ファイルの処理（デモ版）
+        function handleImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください');
+                return;
+            }
+
+            // デモ用のサンプルテキスト
+            const sampleOcrTexts = [
+                '以下テンプレ',
+                '● 今日のタスク\n→ 資料作成\n→ ミーティング準備\n★ 重要：明日までに完了',
+                '▢ 読書メモ\n● 習慣の力\n→ 小さな変化が大きな結果を生む\n↺ 21日間継続してみる',
+                '▢ アイデア整理\n● 新しいプロジェクト案\n→ 市場調査が必要\n⧉ 競合分析も参考に'
+            ];
+
+            const randomText = sampleOcrTexts[Math.floor(Math.random() * sampleOcrTexts.length)];
+            performDemoOCR(randomText);
+        }
+
+        // デモ版OCR実行
+        function performDemoOCR(text) {
+            const ocrResult = document.getElementById('ocrResult');
+            const ocrText = document.getElementById('ocrText');
+            
+            ocrResult.style.display = 'block';
+            ocrText.innerHTML = '<div class="processing">画像を解析中</div>';
+
+            // デモ用の遅延処理
+            setTimeout(() => {
+                ocrText.innerHTML = '<div class="processing">テキスト認識中 50%</div>';
+            }, 500);
+
+            setTimeout(() => {
+                ocrText.innerHTML = '<div class="processing">テキスト認識中 100%</div>';
+            }, 1000);
+
+            setTimeout(() => {
+                currentOcrText = text;
+                ocrText.textContent = text;
+                showMessage('OCR処理が完了しました（デモ版）');
+            }, 1500);
+        }
+
+        // OCRテキストをテキストエリアに適用
+        function applyOcrText() {
+            const postInput = document.getElementById('postInput');
+            const currentText = postInput.value;
+            
+            if (currentText.trim() === '') {
+                postInput.value = currentOcrText;
+            } else {
+                postInput.value = currentText + '\n\n' + currentOcrText;
+            }
+            
+            // 自動変換を実行
+            autoConvertTags(postInput);
+            
+            // フォーカスを当てる
+            postInput.focus();
+            postInput.scrollTop = postInput.scrollHeight;
+            
+            showMessage('OCRテキストが反映されました');
+        }
 
         // 自動変換機能
         function autoConvertTags(input) {
@@ -556,194 +803,246 @@ A ⇄ B の比較
             }
         }
 
-        // 入力フィールドでの自動変換
-        document.getElementById('postInput').addEventListener('input', (e) => {
-            autoConvertTags(e.target);
-        });
+        // 記号ボタンのクリック処理
+        function addSymbol(symbol) {
+            const postInput = document.getElementById('postInput');
+            const cursorPos = postInput.selectionStart;
+            const textBefore = postInput.value.substring(0, cursorPos);
+            const textAfter = postInput.value.substring(cursorPos);
+            
+            postInput.value = textBefore + symbol + ' ' + textAfter;
+            postInput.focus();
+            postInput.setSelectionRange(cursorPos + symbol.length + 1, cursorPos + symbol.length + 1);
+        }
 
-        // スペースキーやエンターキーでの即座変換
-        document.getElementById('postInput').addEventListener('keydown', (e) => {
-            if (e.key === ' ' || e.key === 'Enter') {
-                setTimeout(() => autoConvertTags(e.target), 0);
+        // 投稿作成
+        function createPost() {
+            const postInput = document.getElementById('postInput');
+            const tagInput = document.getElementById('tagInput');
+            const content = postInput.value.trim();
+            const tags = tagInput.value.trim();
+
+            if (!content) {
+                alert('投稿内容を入力してください');
+                return;
             }
+const post = {
+            id: Date.now(),
+            user: 'あなた',
+            content: content,
+            tags: tags ? tags.split(' ').filter(tag => tag.startsWith('#')) : [],
+            timestamp: new Date(),
+            time: '今'
+        };
+
+        posts.unshift(post);
+        renderPosts();
+        
+        // フォームをクリア
+        postInput.value = '';
+        tagInput.value = '';
+        
+        // OCR結果もクリア
+        const ocrResult = document.getElementById('ocrResult');
+        ocrResult.style.display = 'none';
+        currentOcrText = '';
+        
+        showMessage('投稿しました！');
+    }
+
+    // 投稿を表示
+    function renderPosts() {
+        const postsContainer = document.getElementById('posts');
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        
+        // フィルタリング
+        let filteredPosts = posts.filter(post => {
+            // 検索条件でフィルタ
+            const matchesSearch = !searchTerm || 
+                post.content.toLowerCase().includes(searchTerm) ||
+                post.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+            
+            // アクティブなフィルタでフィルタ
+            const matchesFilter = activeFilters.size === 0 || 
+                Array.from(activeFilters).some(filter => 
+                    post.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase())) ||
+                    post.content.toLowerCase().includes(filter.toLowerCase())
+                );
+            
+            return matchesSearch && matchesFilter;
         });
 
-        // 記号ボタンのクリックイベント
+        // 既存のカスタム投稿を保持
+        const customPosts = Array.from(postsContainer.children).filter(post => 
+            post.querySelector('.post-user').textContent === 'あなた'
+        );
+
+        // サンプル投稿
+        const samplePosts = `
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">思考整理マスター</div>
+                    <div class="post-time">5分前</div>
+                </div>
+                <div class="post-content">▢学習効率化
+　●集中力が続かない問題
+　→ポモドーロテクニック導入
+　★25分集中→5分休憩が効果的
+　↺週末に振り返りをする
+　⧉「集中力」本田直之 第2章
+　
+A ⇄ B の比較
+　長時間学習 ⇄ 短時間集中
+　★短時間集中の方が記憶定着率UP</div>
+                <div class="post-tags">
+                    <div class="tag">#learning</div>
+                    <div class="tag">#productivity</div>
+                    <div class="tag">#core</div>
+                    <div class="tag">#flow</div>
+                </div>
+            </div>
+
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">ライフハッカー</div>
+                    <div class="post-time">1時間前</div>
+                </div>
+                <div class="post-content">▢朝のルーティン改善
+　●起床時間がバラバラ
+　→アラーム時間を固定
+　→前日の準備を充実させる
+　★起床後の水分補給が重要
+　↺月末に効果測定
+　
+≡共通点：継続が鍵
+≡タグ：#morning #routine #health</div>
+                <div class="post-tags">
+                    <div class="tag">#habits</div>
+                    <div class="tag">#morning</div>
+                    <div class="tag">#health</div>
+                    <div class="tag">#block</div>
+                </div>
+            </div>
+
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">読書好き</div>
+                    <div class="post-time">3時間前</div>
+                </div>
+                <div class="post-content">▢読書メモ術
+　●読んだ内容を忘れてしまう
+　→読書ノートに記号で整理
+　★重要箇所は●マークで強調
+　⧉他の本との関連性を→で繋ぐ
+　↺月1回でノートを見直し
+　
+デジタル ⇄ アナログ
+　★アナログの方が記憶に残りやすい</div>
+                <div class="post-tags">
+                    <div class="tag">#reading</div>
+                    <div class="tag">#notes</div>
+                    <div class="tag">#memory</div>
+                    <div class="tag">#ref</div>
+                    <div class="tag">#compare</div>
+                </div>
+            </div>
+        `;
+
+        // 新しい投稿のHTML生成
+        const newPostsHTML = filteredPosts.map(post => `
+            <div class="post">
+                <div class="post-header">
+                    <div class="post-user">${post.user}</div>
+                    <div class="post-time">${post.time}</div>
+                </div>
+                <div class="post-content">${post.content}</div>
+                <div class="post-tags">
+                    ${post.tags.map(tag => `<div class="tag">${tag}</div>`).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        postsContainer.innerHTML = newPostsHTML + samplePosts;
+    }
+
+    // フィルタータグの処理
+    function toggleFilter(tagElement) {
+        const tag = tagElement.dataset.tag;
+        
+        if (activeFilters.has(tag)) {
+            activeFilters.delete(tag);
+            tagElement.classList.remove('active');
+        } else {
+            activeFilters.add(tag);
+            tagElement.classList.add('active');
+        }
+        
+        renderPosts();
+    }
+
+    // メッセージ表示
+    function showMessage(text) {
+        const message = document.createElement('div');
+        message.className = 'message';
+        message.textContent = text;
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(message);
+            }, 300);
+        }, 2000);
+    }
+
+    // イベントリスナーの設定
+    document.addEventListener('DOMContentLoaded', function() {
+        // OCR機能の初期化
+        initOCR();
+        
+        // 記号ボタンのクリック
         document.querySelectorAll('.symbol-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const symbol = btn.dataset.symbol;
-                const input = document.getElementById('postInput');
-                const cursorPos = input.selectionStart;
-                const text = input.value;
-                
-                // カーソル位置に記号を挿入
-                const newText = text.slice(0, cursorPos) + symbol + ' ' + text.slice(cursorPos);
-                input.value = newText;
-                
-                // カーソル位置を調整
-                input.focus();
-                input.setSelectionRange(cursorPos + symbol.length + 1, cursorPos + symbol.length + 1);
-                
-                // ボタンにアニメーション効果
-                btn.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    btn.style.transform = 'scale(1)';
-                }, 100);
+                addSymbol(symbol);
             });
         });
 
-        // フィルタータグのクリックイベント
-        document.querySelectorAll('.filter-tag').forEach(tag => {
-            tag.addEventListener('click', () => {
-                const tagName = tag.dataset.tag;
-                
-                if (activeFilters.has(tagName)) {
-                    activeFilters.delete(tagName);
-                    tag.classList.remove('active');
-                } else {
-                    activeFilters.add(tagName);
-                    tag.classList.add('active');
-                }
-                
-                filterPosts();
-            });
+        // 自動変換機能
+        const postInput = document.getElementById('postInput');
+        postInput.addEventListener('input', () => {
+            autoConvertTags(postInput);
         });
 
         // 検索機能
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            filterPosts();
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', renderPosts);
+
+        // フィルタータグ
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                toggleFilter(tag);
+            });
         });
 
-        // 投稿作成機能
-        function createPost() {
-            const content = document.getElementById('postInput').value.trim();
-            const tags = document.getElementById('tagInput').value.trim();
-            
-            if (!content) {
-                alert('内容を入力してください');
-                return;
+        // 投稿タグのクリック（検索に追加）
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tag')) {
+                const tagText = e.target.textContent;
+                const searchInput = document.getElementById('searchInput');
+                searchInput.value = tagText;
+                renderPosts();
+                searchInput.focus();
             }
-            
-            const now = new Date();
-            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
-            const post = {
-                id: Date.now(),
-                user: 'あなた',
-                time: timeStr,
-                content: content,
-                tags: tags.split(/\s+/).filter(tag => tag.startsWith('#')),
-                timestamp: now
-            };
-            
-            posts.unshift(post);
-            renderPosts();
-            
-            // 入力欄をクリア
-            document.getElementById('postInput').value = '';
-            document.getElementById('tagInput').value = '';
-            
-            // 成功メッセージ
-            showMessage('投稿が作成されました！');
-        }
+        });
 
-        // 投稿をレンダリング
-        function renderPosts() {
-            const postsContainer = document.getElementById('posts');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            let filteredPosts = posts;
-            
-            // 検索フィルター
-            if (searchTerm) {
-                filteredPosts = filteredPosts.filter(post => 
-                    post.content.toLowerCase().includes(searchTerm) ||
-                    post.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-                );
-            }
-            
-            // タグフィルター
-            if (activeFilters.size > 0) {
-                filteredPosts = filteredPosts.filter(post => 
-                    [...activeFilters].some(filter => 
-                        post.tags.some(tag => tag.toLowerCase().includes(filter)) ||
-                        post.content.toLowerCase().includes(filter)
-                    )
-                );
-            }
-            
-            // 既存のサンプル投稿を保持
-            const samplePosts = postsContainer.querySelectorAll('.post');
-            let samplePostsHTML = '';
-            samplePosts.forEach(post => {
-                samplePostsHTML += post.outerHTML;
-            });
-            
-            // 新しい投稿をレンダリング
-            const newPostsHTML = filteredPosts.map(post => `
-                <div class="post">
-                    <div class="post-header">
-                        <div class="post-user">${post.user}</div>
-                        <div class="post-time">${post.time}</div>
-                    </div>
-                    <div class="post-content">${post.content}</div>
-                    <div class="post-tags">
-                        ${post.tags.map(tag => `<div class="tag">${tag}</div>`).join('')}
-                    </div>
-                </div>
-            `).join('');
-            
-            postsContainer.innerHTML = newPostsHTML + samplePostsHTML;
-        }
-
-        // フィルタリング機能
-        function filterPosts() {
-            renderPosts();
-        }
-
-        // メッセージ表示
-        function showMessage(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                z-index: 1000;
-                animation: slideIn 0.3s ease;
-            `;
-            messageDiv.textContent = message;
-            
-            document.body.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => {
-                    document.body.removeChild(messageDiv);
-                }, 300);
-            }, 3000);
-        }
-        
-        // CSS アニメーション
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // 初期化
+        // 初期表示
         renderPosts();
+    });
     </script>
 </body>
 </html>
